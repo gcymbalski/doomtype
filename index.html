@@ -1,0 +1,256 @@
+<!doctype html>
+<html >
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title>DA MFin DWANGO Z0NE</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+
+    <p id='header' style="word-spacing: 20px;">Generate your Doom PNGs
+    below! Or go to Hell, idk</p>
+    <br/>
+    <p/>
+    <input id='todoom' type='text'/><button id='doomit'>Doom me</button>
+	<canvas id="fontcanvas" style="display: none;"></canvas>
+    <canvas id="hellcanvas" width="640" height="480" style="display: none;"></canvas>
+    <canvas id="imgcanvas" width="640" height="480" style="display: none;"></canvas>
+    <br>
+    <img id="hellimg" style="display: none;"/>
+
+	<script>
+        var fontimg = new Image();
+        fontimg.src = 'doomfont.png';
+        var fontwidth = fontimg.naturalWidth;
+        var fontheight = fontimg.naturalHeight;
+        var fontcanvas = document.getElementById('fontcanvas');
+        var fontctx = fontcanvas.getContext('2d');
+        var hellcanvas = document.getElementById('hellcanvas');
+        var hellctx = hellcanvas.getContext('2d');
+        var imgcanvas = document.getElementById('imgcanvas');
+        var imgctx = imgcanvas.getContext('2d');
+        var hellimg = document.getElementById('hellimg');
+        var hellimg = document.getElementById('hellimg');
+        var glyphkeys = ['!','"','#','$','%','&',
+                    "'", '(', ')', '*', '+', ',',
+                    '-', '.', '/', '0', '1', '2',
+                    '3', '4', '5', '6', '7', '8',
+                    '9', ':', ';', '<', '=', '>',
+                    '?', '@', 'A', 'B', 'C', 'D',
+                    'E', 'F', 'G', 'H', 'I', 'J',
+                    'K', 'L', 'M', 'N', 'O', 'P',
+                    'Q', 'R', 'S', 'T', 'U', 'V',
+                    'W', 'X', 'Y', 'Z', '[', '\\',
+                    ']', '^', '_', '`', 'a', 'b',
+                    'c', 'd', 'e', 'f', 'g', 'h',
+                    'i', 'j', 'k', 'l', 'm', 'n',
+                    'o', 'p', 'q', 'r', 's', 't',
+                    'u', 'v', 'w', 'x', 'y', 'z'];
+        var special = {
+                ".": "period",
+                "+": "plus",
+                "-": "dash",
+                "*": "asterisk",
+                "_": "underscore",
+                "(": "open_paren",
+                ")": "close_paren",
+                "[": "open_bracket",
+                "]": "close_bracket",
+                ";": "semicolon",
+                "/": "foreslash",
+                "\\": "backslash",
+                "^": "carat",
+                "@": "asperand",
+                "&": "ampersand",
+                "!": "exclamation",
+                "?": "question",
+                "#": "hash",
+                "%": "percent",
+                "$": "dollar",
+                "'": "single_quote",
+                ",": "comma",
+                "\"": "double_quote",
+                ":": "colon",
+                ";": "semicolon",
+                "`": "backtick",
+                "<": "lt",
+                ">": "gt",
+                "=": "equals",
+                " ": "space"
+            }
+        var fontglyphs=null;
+        var glyphimgs=null;
+        // in hell
+        var curx=0; // increment by glyph with
+        var cury=0; // increment by fontheight-1 when out of row space
+
+        fontimg.onload = function() {
+            fontcanvas.width = fontwidth;
+            fontcanvas.height = fontheight;
+            fontctx.drawImage(fontimg, 0, 0, fontwidth, fontheight);
+            fontcanvas.style.display = 'none';
+            hellcanvas.width=window.innerWidth;
+            hellcanvas.height=window.innerHeight;
+            // now i have an array of glyphs, ho ho ho
+            fontglyphs = getGlyphs(fontctx.getImageData(0,0,fontwidth,fontheight));
+            glyphimgs = getGlyphImages();
+        }
+
+        getGlyphImages = function() {
+            var imgarray = new Array();
+            for (x=0; x<glyphkeys.length; x++) {
+                console.log(`x is ${x}, working on ${glyphkeys[x]}`);
+                imgarray.push(getStringImage(glyphkeys[x]));
+            }
+            return imgarray;
+        }
+
+        getGlyphName = function(char) {
+            charidx = special[char]
+            if (charidx == null) {
+                return char;
+            } else {
+                return special[char];
+            }
+        }
+
+        getGlyphs = function(idata) {
+            // get glyphs based on first row's pixels not being blank
+            var font = new Array();
+            var separators = new Array();
+            for (i=0; i < idata.width; i+=1) {
+                pixelalpha = idata.data[(i*4)+3];
+                if ( pixelalpha == 255 ) {
+                    console.log("Saw separator at ${i}");
+                    separators.push(i);
+                }
+            }
+            var glyphs = new Array();
+            // i[0] will always be the origin, so who cares
+            for (i=1; i < separators.length; i++) {
+                // copy from separators[i-1] to [i] into a new ImageData
+                newglyph = fontctx.getImageData(separators[i-1],1,separators[i]-separators[i-1],fontheight-1);
+                glyphs.push(newglyph);
+            }
+            return glyphs;
+        }
+
+        drawGlyph = function(char) {
+            // real height of a row is fontheight-1
+            // length being who cares
+            if ( char == ' ' ) {
+                curx+=13;
+                return;
+            }
+            var glyphdata = fontglyphs[glyphkeys.indexOf(char)];
+            if (curx + glyphdata.width > hellcanvas.width) {
+                // reset to x 0, y+=fontheight-1
+                curx=0;
+                if (cury+fontheight-1>=hellcanvas.height) {
+                    clear();
+                } else {
+                    cury+=fontheight-1
+                }
+            }
+            hellctx.putImageData(glyphdata,curx,cury);
+            curx+=glyphdata.width;
+        }
+
+        drawString = function(line) {
+            for (i=0; i<line.length; i++){
+                drawGlyph(line[i]);
+            }
+        }
+
+        getStringImage = function(text) {
+            clear();
+            drawString(text);
+            console.log(`Drew ${text}`);
+            imgcanvas.width=curx;
+            imgcanvas.height=fontheight-1;
+            line=hellctx.getImageData(0,0,curx,cury+fontheight-1);
+            imgctx.putImageData(line,0,0);
+            return imgcanvas.toDataURL();
+        }
+
+        clear = function() {
+            curx = 0;
+            cury = 0;
+            hellctx.clearRect(0,0,hellcanvas.width,hellcanvas.height);
+        }
+
+        window.onload = function() {
+            var header = document.getElementById('header');
+            //header.style.display = 'inline';
+            var headertext = header.innerText;
+            chupdate=function() {
+                        clear();
+                        textvalue=document.getElementById('todoom').value;
+                        hellimg.src=getStringImage(textvalue);
+                        hellimg.style.display='inline';
+                    };
+            document.getElementById('doomit').addEventListener("click", chupdate);
+            document.getElementById('todoom').addEventListener("keyup",
+                    function(e){
+                        if (e.keyCode === 13) {
+                            chupdate();
+                        }
+                    });
+
+            var css = window.document.createElement("style");
+            css.type = "text/css";
+            document.head.appendChild(css);
+            for (i=0; i<glyphkeys.length; i++) {
+                console.log(`Glyph width for ${glyphkeys[i]}: ${fontglyphs[i].width}`);
+                propername = getGlyphName(glyphkeys[i]);
+                var rule = `span.char_${propername} {
+                    float: left;
+                    width: ${fontglyphs[i].width}px;
+                    height: ${fontheight-1}px;
+                    background-image: url("${glyphimgs[i]}");
+                    text-indent: -99999px;
+                    display: inline-block;
+                }`
+                css.sheet.insertRule(rule, 0);
+                console.log(`Added rule ${rule}`);
+            }
+
+            var propername = "space"
+            console.log(`Setting up rule for ${propername}`);
+            var spacerule = `span.char_${propername} {
+                    float: left;
+                    width: 10px;
+                    height: ${fontheight-1}px;
+                    text-indent: -99999px;
+                    display: inline-block;
+                }`
+            console.log(`Adding spacerule as ${spacerule}`);
+            css.sheet.insertRule(spacerule, 0);
+
+            replacementhtml = "";
+            console.log(`Saw inner text: ${headertext}`);
+            for (i=0; i < headertext.length; i++) {
+                curchar = headertext[i];
+                if (glyphkeys.indexOf(curchar) > -1 || curchar == " ") {
+                    curglyph = getGlyphName(headertext[i]);
+                    if (curchar == " ") {
+                        curchar = "&nbsp;";
+                    }
+                    newspan=`<span class="char_${curglyph}">${curchar}</span>`;
+                    console.log(`Setting up replacement for ${curchar} as ${newspan}`);
+                    replacementhtml = replacementhtml.concat(newspan);
+                } else {
+                    replacementhtml = replacementhtml.concat(curchar);
+                }
+            }
+
+            console.log("Replacement HTML:");
+            console.log(replacementhtml);
+            header.innerHTML=replacementhtml;
+        }
+    </script>
+</body>
+
+</html>
