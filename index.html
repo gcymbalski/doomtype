@@ -23,8 +23,8 @@
 	<script>
         var fontimg = new Image();
         fontimg.src = 'doomfont.png';
-        var fontwidth = fontimg.naturalWidth;
-        var fontheight = fontimg.naturalHeight;
+        var fontheight = 0;
+        var fontwidth = 0;
         var fontcanvas = document.getElementById('fontcanvas');
         var fontctx = fontcanvas.getContext('2d');
         var hellcanvas = document.getElementById('hellcanvas');
@@ -87,6 +87,8 @@
         var cury=0; // increment by fontheight-1 when out of row space
 
         fontimg.onload = function() {
+            fontwidth = fontimg.naturalWidth;
+            fontheight = fontimg.naturalHeight;
             fontcanvas.width = fontwidth;
             fontcanvas.height = fontheight;
             fontctx.drawImage(fontimg, 0, 0, fontwidth, fontheight);
@@ -94,7 +96,8 @@
             hellcanvas.width=window.innerWidth;
             hellcanvas.height=window.innerHeight;
             // now i have an array of glyphs, ho ho ho
-            fontglyphs = getGlyphs(fontctx.getImageData(0,0,fontwidth,fontheight));
+            imagedata = fontctx.getImageData(0,0,fontwidth,fontheight)
+            fontglyphs = getGlyphs(imagedata);
             glyphimgs = getGlyphImages();
         }
 
